@@ -1,6 +1,10 @@
 import {easyIMSDK, EasyIMSDK, EasyIMSDKConfig} from "./easyim/libs/sdk/EasyIMSDK";
 import Logger from "./easyim/libs/log/Logger";
 import Beans from "./easyim/libs/utils";
+import {TOPIC_APP_DOWNSTREAM, TOPIC_APP_DOWNSTREAM_METHOD} from "./easyim/common/Topic";
+import EasyIMApis from "./easyim/libs/apis/EasyIMApis";
+import MessageSendForm from "./easyim/dto/form/MessageSendForm";
+import ApiResponse from "./easyim/libs/apis/ApiResponse";
 
 /**
  *  easyIMSDK DEMO
@@ -17,16 +21,20 @@ function appendContent(text: string){
 }
 
 let host = "localhost";
-let port = 9091;
+let socketPort = 9091;
+let httpPort = 8081;
+
 
 let loginAuid = "admin";
 let loginToken = "admin";
+let toUser = "";
 
 function initEasyIMSDK(): Promise<EasyIMSDK> {
     return new Promise<EasyIMSDK>(function (resolve, reject) {
         const config:EasyIMSDKConfig = new EasyIMSDKConfig();
         config.host = host;
-        config.port = port;
+        config.socketPort = socketPort;
+        config.httpPort = httpPort;
         config.key = 'TSDKTEST00001';
         config.secret = '';
         config.apiTransport = 'HTTP';
@@ -57,9 +65,9 @@ async function sdkInitReceiveMessage() {
             appendContent(e);
         });
 
-    (sdk as EasyIMSDK).getSocket().listen('topic.message', function(ack){
-        console.log('topic.message ack:' + Beans.json(ack));
-        appendContent('topic.message ack:' + Beans.json(ack));
+    (sdk as EasyIMSDK).getSocket().listen(TOPIC_APP_DOWNSTREAM.topic_name, function(ack){
+        console.log('TOPIC_APP_DOWNSTREAM RECEIVE:' + Beans.json(ack));
+        appendContent('TOPIC_APP_DOWNSTREAM RECEIVE:' + Beans.json(ack));
     });
 }
 
@@ -74,18 +82,44 @@ document.getElementById("init-btn").onclick = function (e) {
     // @ts-ignore
     loginToken = document.getElementById("token").value;
     // @ts-ignore
+    toUser = document.getElementById("toUser").value;
+    // @ts-ignore
     host = document.getElementById("host").value;
     // @ts-ignore
-    port = document.getElementById("port").value;
+    socketPort = document.getElementById("port").value;
     if(!loginAuid || !loginToken){
         console.error("请输入登录auid,token");
         appendContent("请输入登录auid,token");
+        return;
+    }
+    if(!toUser){
+        console.error("请输入目标用户的auid");
+        appendContent("请输入目标用户的auid");
         return;
     }
 
     sdkInitReceiveMessage().then((res:void)=>{
         console.log("sdk init ok");
         appendContent("sdk init ok");
+
+
+        setInterval(()=>{
+            const messageForm = new MessageSendForm();
+            messageForm.body = "web_msg_" + new Date().getTime();
+            messageForm.formUser = loginAuid;
+            messageForm.toTarget = toUser;
+            messageForm.way = "P2P";
+            messageForm.type = "TEXT";
+
+            EasyIMApis.sendMessage.call(messageForm).then((res: ApiResponse<void>) => {
+                if(res.isFailed()){
+                    console.log(" send message:" + messageForm.body + " failed.");
+                }
+            }).catch(e => {
+                console.error(e);
+            })
+        }, 10*1000);
+
     }).catch((e)=>{
         console.error(e);
     });

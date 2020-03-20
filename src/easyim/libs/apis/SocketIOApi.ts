@@ -65,9 +65,9 @@ export default class SocketIOApi<K extends ProtocolMessage, V> implements IApi<K
             let self = this;
             return new Promise<ApiResponse<V>>(function (resolve, reject) {
                 const form = new UserLoginForm();
-                form.auid = 'admin';
-                form.token = 'admin';
-                form.sdkid = 'TSDKTEST00001';
+                form.auid = easyIMSDK.getState().loginAuid;
+                form.token = easyIMSDK.getState().loginToken;
+                form.appKey = easyIMSDK.getState().key;
                 const tokenResponse: Promise<ApiResponse<string>> = EasyIMApis.login.call(form);
                 tokenResponse.then((res) => {
                     // resolve(res);
@@ -160,7 +160,7 @@ export default class SocketIOApi<K extends ProtocolMessage, V> implements IApi<K
         return easyIMSDK.getState().host;
     }
     getPort: () => number = function(){
-        return easyIMSDK.getState().port;;
+        return easyIMSDK.getState().socketPort;;
     }
 }
 

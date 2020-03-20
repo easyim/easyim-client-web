@@ -17,7 +17,8 @@ import {jwtCache} from "../cache/jwt"
 
 export class EasyIMSDKConfig {
     host:string = "";
-    port:number = 80;
+    socketPort:number = 9091;
+    httpPort:number = 80;
     key:string = "";
     secret:string = "";
     apiTransport:string = "";
@@ -54,18 +55,19 @@ export class EasyIMSDK {
     init(config:EasyIMSDKConfig, callback: (sdk:EasyIMSDK) => void): EasyIMSDK {
         const self = this;
         self.config.host = config.host ? config.host : 'localhost';
-        self.config.port = config.port ? config.port : 80;
+        self.config.socketPort = config.socketPort ? config.socketPort : 80;
+        self.config.httpPort = config.httpPort ? config.httpPort : 80;
         self.transport = config.apiTransport ? config.apiTransport : 'HTTP';
         self.config.key = config.key;
         self.config.secret = config.secret;
         self.config.loginToken = config.loginToken;
         self.config.loginAuid = config.loginAuid;
         // TODO: verify sdk with key,secret.
-        Logger.info(`ready to connect:${'http://' + self.config.host + ':' + self.config.port}`);
+        Logger.info(`ready to connect:${'http://' + self.config.host + ':' + self.config.socketPort}`);
 
         // handler default event for apiSocket.
         let firstInit: boolean = false;// 第一次初始化
-        socket.connect('http://' + self.config.host + ':' + self.config.port);
+        socket.connect('http://' + self.config.host + ':' + self.config.socketPort);
         socket.listen('connect', function(msg: any) {
             Logger.info('apiSocket.io connected!');
             self.socketConnected = true;
@@ -93,7 +95,7 @@ export class EasyIMSDK {
         const form = new UserLoginForm();
         form.auid = this.config.loginAuid;
         form.token = this.config.loginToken;
-        form.sdkid = this.config.key;
+        form.appKey = this.config.key;
         EasyIMApis.login.call(form).then((res:ApiResponse<string>)=>{
             Logger.info('auto Login ok');
             if(res.isSucceed()){
